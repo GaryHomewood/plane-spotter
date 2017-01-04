@@ -1,0 +1,10 @@
+<resources>
+    <style name="Base.AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimaryDark">#000000</item>
+        <item name="colorPrimary">#000000</item>
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:statusBarColor">@color/gallery_status_background</item>
+    </style>
+</resources>

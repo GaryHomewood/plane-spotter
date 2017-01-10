@@ -9,7 +9,9 @@ An Android app to retrieve and display an RSS feed.
 3. RxJava
 4. Glide
 5. RSS feed modelled with [Parceler](https://github.com/johncarl81/parceler)
+6. Realm.io used to save favourites
 
 ## TODO
 
-1. Add/remove items from a list of favourites.
+1. Crop/resize images
+2. Use ImageView with a pinchzoom

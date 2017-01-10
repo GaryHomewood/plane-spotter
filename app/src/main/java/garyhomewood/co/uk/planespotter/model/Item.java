@@ -7,19 +7,19 @@ import org.simpleframework.xml.Element;
 import org.simpleframework.xml.Root;
 
 /**
- *
+ * RSS item
  */
 @Parcel
 @Root(name = "item", strict = false)
 public class Item {
     @Element(name = "title")
-    private String title;
+    public String title;
     @Element(name = "description")
-    private String description;
+    public String description;
     @Element(name = "subject")
-    private String subject;
+    public String subject;
     @Element(name = "thumbnail", required = false)
-    private Thumbnail thumbnail;
+    public Thumbnail thumbnail;
 
     @Parcel
     public static class Thumbnail {
@@ -32,7 +32,7 @@ public class Item {
     }
 
     @ParcelConstructor
-    public Item(
+    Item(
             @Element(name = "title") String title,
             @Element(name = "description") String description,
             @Element(name = "thumbnail", required = false) Thumbnail thumbnail,
@@ -41,22 +41,6 @@ public class Item {
         this.description = description;
         this.thumbnail = thumbnail;
         this.subject = subject;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public String getSubject() {
-        return subject;
-    }
-
-    public Thumbnail getThumbnail() {
-        return thumbnail;
     }
 
     public String getDescriptionText() {

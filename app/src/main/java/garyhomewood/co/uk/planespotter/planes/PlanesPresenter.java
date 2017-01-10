@@ -1,8 +1,10 @@
 package garyhomewood.co.uk.planespotter.planes;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import garyhomewood.co.uk.planespotter.api.PlanesService;
+import garyhomewood.co.uk.planespotter.model.GalleryItem;
 import garyhomewood.co.uk.planespotter.model.Item;
 import garyhomewood.co.uk.planespotter.model.Rss;
 import rx.Observable;
@@ -13,13 +15,12 @@ import rx.schedulers.Schedulers;
 /**
  *
  */
-
-public class PlanesPresenter implements PlanesContract.UserActionsListener {
+class PlanesPresenter implements PlanesContract.UserActionsListener {
 
     private final PlanesContract.View planesView;
     private final PlanesService service;
 
-    public PlanesPresenter(PlanesContract.View planesView, PlanesService service) {
+    PlanesPresenter(PlanesContract.View planesView, PlanesService service) {
         this.planesView = planesView;
         this.service = service;
     }
@@ -54,6 +55,18 @@ public class PlanesPresenter implements PlanesContract.UserActionsListener {
 
     @Override
     public void openGallery(List<Item> items, int selectedItem) {
-        planesView.showGallery(items, selectedItem);
+        planesView.showGallery(getItems(items), selectedItem);
+    }
+
+    private List<GalleryItem> getItems(List<Item> items) {
+        List<GalleryItem> galleryItems = new ArrayList<>();
+        for (Item item : items) {
+            galleryItems.add(new GalleryItem(
+                    item.title,
+                    item.description,
+                    item.subject,
+                    item.thumbnail.getUrl()));
+        }
+        return galleryItems;
     }
 }

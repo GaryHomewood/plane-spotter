@@ -6,7 +6,7 @@ import org.simpleframework.xml.Root;
 import java.util.List;
 
 /**
- *
+ * RSS channel of items
  */
 @Root(name = "channel", strict = false)
 public class Channel {

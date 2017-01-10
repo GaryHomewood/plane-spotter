@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.design.widget.AppBarLayout;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
@@ -26,14 +27,20 @@ import com.bumptech.glide.Glide;
 
 import org.parceler.Parcels;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import garyhomewood.co.uk.planespotter.PlaneSpotterApp;
 import garyhomewood.co.uk.planespotter.R;
-import garyhomewood.co.uk.planespotter.model.Item;
+import garyhomewood.co.uk.planespotter.model.Favourite;
+import garyhomewood.co.uk.planespotter.model.GalleryItem;
+import io.realm.Realm;
+import io.realm.RealmResults;
+import timber.log.Timber;
 
 /**
  *
@@ -45,9 +52,12 @@ public class GalleryActivity extends AppCompatActivity {
     private static final int UI_ANIMATION_DELAY = 100;
 
     protected int selectedItem;
-    private List<Item> items;
+    private List<GalleryItem> items;
     private Map<Integer, View> captions = new HashMap<>();
     private int captionOffscreenTranslation;
+    private Menu menu;
+    private boolean isFavourite;
+    private GalleryPagerAdapter adapter;
 
     private boolean immersiveFullscreen;
     private final Handler immersiveFullscreenHandler = new Handler();
@@ -92,6 +102,8 @@ public class GalleryActivity extends AppCompatActivity {
                     captionView.setTranslationY(0);
                 }
             }
+
+            isFavourite = checkIfFavourite(position);
         }
     }
 
@@ -108,7 +120,8 @@ public class GalleryActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
-        viewPager.setAdapter(new GalleryPagerAdapter(this));
+        adapter = new GalleryPagerAdapter(this);
+        viewPager.setAdapter(adapter);
         viewPager.setCurrentItem(selectedItem);
         viewPager.addOnPageChangeListener(new PageListener());
 
@@ -127,6 +140,10 @@ public class GalleryActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_gallery, menu);
+        this.menu = menu;
+
+        isFavourite = checkIfFavourite(selectedItem);
+
         return true;
     }
 
@@ -134,6 +151,11 @@ public class GalleryActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_favourite:
+                if (isFavourite) {
+                    removeFavourite();
+                } else {
+                    addFavourite();
+                }
                 return true;
 
             case R.id.action_settings:
@@ -144,6 +166,75 @@ public class GalleryActivity extends AppCompatActivity {
         }
     }
 
+    private boolean checkIfFavourite(int position) {
+        // indicate if this item is a favourite
+        GalleryItem item = items.get(position);
+        Realm realm  = ((PlaneSpotterApp) getApplication()).getRealm();
+        final RealmResults<Favourite> results = realm.where(Favourite.class).equalTo("thumbnail", item.thumbnail).findAll();
+        if (results.size() == 1) {
+            menu.getItem(0).setIcon(ContextCompat.getDrawable(getBaseContext(), R.drawable.ic_bookmark));
+            return true;
+        } else {
+            menu.getItem(0).setIcon(ContextCompat.getDrawable(getBaseContext(), R.drawable.ic_bookmark_border));
+            return false;
+        }
+    }
+
+    private void removeFavourite() {
+        Realm realm  = ((PlaneSpotterApp) getApplication()).getRealm();
+        final GalleryItem selectedItem = items.get(viewPager.getCurrentItem());
+
+        realm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                RealmResults<Favourite> results = realm.where(Favourite.class).equalTo("thumbnail", selectedItem.thumbnail).findAll();
+                results.deleteAllFromRealm();
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                Timber.d("Success");
+                menu.getItem(0).setIcon(ContextCompat.getDrawable(getBaseContext(), R.drawable.ic_bookmark_border));
+                isFavourite = false;
+                adapter.notifyDataSetChanged();
+            }
+        }, new Realm.Transaction.OnError() {
+            @Override
+            public void onError(Throwable error) {
+                Timber.d("Error", error);
+            }
+        });
+    }
+
+    private void addFavourite() {
+        Realm realm  = ((PlaneSpotterApp) getApplication()).getRealm();
+        final GalleryItem selectedItem = items.get(viewPager.getCurrentItem());
+
+        realm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realmBackground) {
+                Favourite favourite = realmBackground.createObject(Favourite.class);
+                favourite.setTitle(selectedItem.title);
+                favourite.setDescription(selectedItem.description);
+                favourite.setSubject(selectedItem.subject);
+                favourite.setThumbnail(selectedItem.thumbnail);
+                favourite.setCreatedDate(new Date(System.currentTimeMillis()));
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                Timber.d("Success");
+                menu.getItem(0).setIcon(ContextCompat.getDrawable(getBaseContext(), R.drawable.ic_bookmark));
+                isFavourite = true;
+                adapter.notifyDataSetChanged();
+            }
+        }, new Realm.Transaction.OnError() {
+            @Override
+            public void onError(Throwable error) {
+                Timber.d("Error", error);
+            }
+        });
+    }
 
     class GalleryPagerAdapter extends PagerAdapter {
         Context context;
@@ -174,7 +265,7 @@ public class GalleryActivity extends AppCompatActivity {
                     .into(imageView);
 
             final TextView caption = (TextView) view.findViewById(R.id.caption);
-            caption.setText(items.get(position).getTitle());
+            caption.setText(items.get(position).title);
             if (immersiveFullscreen) {
                 caption.setTranslationY(captionOffscreenTranslation);
             }

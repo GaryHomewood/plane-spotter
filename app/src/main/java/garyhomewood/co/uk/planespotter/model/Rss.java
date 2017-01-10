@@ -7,7 +7,7 @@ import org.simpleframework.xml.NamespaceList;
 import org.simpleframework.xml.Root;
 
 /**
- *
+ * RSS root
  */
 @Root(name = "rss", strict = false)
 @NamespaceList({

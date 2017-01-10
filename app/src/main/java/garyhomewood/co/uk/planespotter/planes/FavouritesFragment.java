@@ -26,16 +26,17 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import garyhomewood.co.uk.planespotter.PlaneSpotterApp;
 import garyhomewood.co.uk.planespotter.R;
-import garyhomewood.co.uk.planespotter.di.Injector;
+import garyhomewood.co.uk.planespotter.model.Favourite;
 import garyhomewood.co.uk.planespotter.model.GalleryItem;
-import garyhomewood.co.uk.planespotter.model.Item;
 import garyhomewood.co.uk.planespotter.planesgallery.GalleryActivity;
+import io.realm.Realm;
 
 /**
  *
  */
-public class PlanesFragment extends Fragment implements PlanesContract.View {
+public class FavouritesFragment extends Fragment implements FavouritesContract.View {
 
     private static final String KEY_ITEMS = "KEY_ITEMS";
     private static final String KEY_SELECTED_ITEM = "KEY_SELECTED_ITEM";
@@ -43,18 +44,19 @@ public class PlanesFragment extends Fragment implements PlanesContract.View {
     @BindView(R.id.item_list) RecyclerView recyclerView;
     @BindView(R.id.refresh_layout) SwipeRefreshLayout swipeRefreshLayout;
 
-    private PlanesContract.UserActionsListener actionsListener;
-    private PlanesAdapter adapter;
-    ItemClickListener itemClickListener = new ItemClickListener() {
+    private FavouritesContract.UserActionsListener presenter;
+    private FavouritesFragment.FavouritesAdapter adapter;
+    private List<Favourite> favourites;
+    private FavouritesFragment.ItemClickListener itemClickListener = new FavouritesFragment.ItemClickListener() {
         @Override
-        public void onItemClick(List<Item> items, int selectedItem) {
-            actionsListener.openGallery(items, selectedItem);
+        public void onItemClick(int selectedItem) {
+            presenter.openGallery(favourites, selectedItem);
         }
     };
 
-    public static PlanesFragment newInstance() {
+    public static FavouritesFragment newInstance() {
         Bundle args = new Bundle();
-        PlanesFragment fragment = new PlanesFragment();
+        FavouritesFragment fragment = new FavouritesFragment();
         fragment.setArguments(args);
         return fragment;
     }
@@ -62,14 +64,16 @@ public class PlanesFragment extends Fragment implements PlanesContract.View {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        actionsListener = new PlanesPresenter(this, Injector.providePlanesService());
-        adapter = new PlanesAdapter(new ArrayList<Item>(), itemClickListener);
+
+        Realm realm = ((PlaneSpotterApp) getActivity().getApplication()).getRealm();
+        presenter = new FavouritesPresenter(this, realm);
+        adapter = new FavouritesAdapter(new ArrayList<Favourite>(), itemClickListener);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        actionsListener.loadPlanes();
+        presenter.loadFavourites();
     }
 
     @Nullable
@@ -85,7 +89,7 @@ public class PlanesFragment extends Fragment implements PlanesContract.View {
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                actionsListener.loadPlanes();
+                presenter.loadFavourites();
             }
         });
 
@@ -93,8 +97,9 @@ public class PlanesFragment extends Fragment implements PlanesContract.View {
     }
 
     @Override
-    public void showPlanes(List<Item> items) {
-        adapter.replaceData(items);
+    public void showFavourites(List<Favourite> favourites) {
+        this.favourites = favourites;
+        adapter.replaceData(favourites);
     }
 
     @Override
@@ -120,41 +125,41 @@ public class PlanesFragment extends Fragment implements PlanesContract.View {
         startActivity(intent);
     }
 
-    public static class PlanesAdapter extends RecyclerView.Adapter<PlanesAdapter.ViewHolder> {
-        private List<Item> items;
-        private ItemClickListener itemClickListener;
+    public static class FavouritesAdapter extends RecyclerView.Adapter<FavouritesAdapter.ViewHolder> {
+        private List<Favourite> favourites;
+        private FavouritesFragment.ItemClickListener itemClickListener;
         private Context context;
 
-        PlanesAdapter(List<Item> planes, ItemClickListener itemClickListener) {
-            this.items = planes;
+        FavouritesAdapter(List<Favourite> favourites, FavouritesFragment.ItemClickListener itemClickListener) {
+            this.favourites = favourites;
             this.itemClickListener = itemClickListener;
         }
 
         @Override
-        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        public FavouritesAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             context = parent.getContext();
             View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_plane, parent, false);
-            return new ViewHolder(v, itemClickListener, items);
+            return new FavouritesAdapter.ViewHolder(v, itemClickListener, favourites);
         }
 
         @Override
-        public void onBindViewHolder(ViewHolder holder, int position) {
-            Item plane = items.get(position);
-            holder.title.setText(plane.title);
-            holder.description.setText(plane.getDescriptionText());
+        public void onBindViewHolder(FavouritesAdapter.ViewHolder holder, int position) {
+            Favourite plane = favourites.get(position);
+            holder.title.setText(plane.getTitle());
+            holder.description.setText(plane.getDescription());
             Glide.with(context)
-                    .load(plane.getOriginalUrl())
+                    .load(plane.getThumbnail())
                     .fitCenter()
                     .into(holder.thumbnail);
         }
 
         @Override
         public int getItemCount() {
-            return items.size();
+            return favourites.size();
         }
 
-        void replaceData(List<Item> planes) {
-            this.items = planes;
+        void replaceData(List<Favourite> favourites) {
+            this.favourites = favourites;
             notifyDataSetChanged();
         }
 
@@ -162,25 +167,25 @@ public class PlanesFragment extends Fragment implements PlanesContract.View {
             @BindView(R.id.item_title) TextView title;
             @BindView(R.id.item_description) TextView description;
             @BindView(R.id.item_thumbnail) ImageView thumbnail;
-            ItemClickListener itemClickListener;
-            List<Item> items;
+            FavouritesFragment.ItemClickListener itemClickListener;
+            List<Favourite> favourites;
 
-            ViewHolder(View itemView, ItemClickListener itemClickListener, List<Item> items) {
+            ViewHolder(View itemView, FavouritesFragment.ItemClickListener itemClickListener, List<Favourite> favourites) {
                 super(itemView);
                 ButterKnife.bind(this, itemView);
                 this.itemClickListener = itemClickListener;
-                this.items = items;
+                this.favourites = favourites;
                 itemView.setOnClickListener(this);
             }
 
             @Override
             public void onClick(View view) {
-                itemClickListener.onItemClick(items, getAdapterPosition());
+                itemClickListener.onItemClick(getAdapterPosition());
             }
         }
     }
 
     public interface ItemClickListener {
-        void onItemClick(List<Item> items, int selectedItem);
+        void onItemClick(int selectedItem);
     }
 }

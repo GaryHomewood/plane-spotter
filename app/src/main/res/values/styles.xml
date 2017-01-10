@@ -10,6 +10,8 @@
         <item name="colorPrimaryDark">#000000</item>
         <item name="colorPrimary">#111</item>
         <item name="android:windowBackground">@color/background</item>
+        <item name="android:textColorPrimary">@android:color/white</item>
+
     </style>
 
     <style name="Toolbar" parent="ThemeOverlay.AppCompat.ActionBar">
@@ -36,6 +38,7 @@
     </style>
 
     <style name="GalleryCaption">
-        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_color</item>
     </style>
 </resources>

@@ -30,7 +30,6 @@ class PlanesPresenter implements PlanesContract.UserActionsListener {
         planesView.showProgressIndicator(true);
 
         Observable<Rss> call = service.getPlanes();
-
         call.subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<Rss>() {

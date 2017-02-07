@@ -31,6 +31,8 @@ public class Injector {
     private static final String BASE_URL = "https://www.planespotters.net/Aviation_Photos/";
     private static final String PRAGMA = "Pragma";
     private static final String CACHE_CONTROL = "Cache-Control";
+    private static final String USER_AGENT = "User-Agent";
+    private static final String USER_AGENT_VALUE = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.95 Safari/537.36";
 
     private static HttpLoggingInterceptor addHttpLogging() {
         HttpLoggingInterceptor httpLoggingInterceptor =
@@ -44,20 +46,24 @@ public class Injector {
         return httpLoggingInterceptor;
     }
 
-    private static Interceptor addRequestCacheHeader() {
+    private static Interceptor addRequestHeader() {
         return new Interceptor() {
             @Override
             public Response intercept(Chain chain) throws IOException {
                 Request request;
 
+                // server requires a browser user agent
+                Request.Builder builder = chain.request().newBuilder()
+                        .addHeader(USER_AGENT, USER_AGENT_VALUE);
+
                 if (PlaneSpotterApp.hasNetwork()) {
-                    request = chain.request();
+                    request = builder.build();
                 } else {
                     CacheControl cacheControl = new CacheControl.Builder()
                             .maxStale(7, TimeUnit.DAYS)
                             .build();
 
-                    request = chain.request().newBuilder()
+                    request = builder
                             .cacheControl(cacheControl)
                             .build();
                 }
@@ -93,7 +99,7 @@ public class Injector {
         OkHttpClient client = new OkHttpClient.Builder()
                 .cache(cache)
                 .addInterceptor(addHttpLogging())
-                .addInterceptor(addRequestCacheHeader())
+                .addInterceptor(addRequestHeader())
                 .addNetworkInterceptor(addResponseCacheHeader())
                 .build();
 

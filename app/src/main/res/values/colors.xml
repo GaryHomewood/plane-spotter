@@ -3,7 +3,8 @@
     <color name="background">#000000</color>
     <color name="gallery_status_background">#000000</color>
     <color name="white">#ffffff</color>
-    <color name="text_color">#bdbdbd</color>
+    <color name="text_color">#757575</color>
+    <color name="selected_text_color">#bdbdbd</color>
     <color name="tab_indicator">#dd2c00</color>
-    <color name="dg">#111</color>
+    <color name="tab_bg">#212121</color>
 </resources>
